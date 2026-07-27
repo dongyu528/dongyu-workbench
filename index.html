@@ -76,6 +76,9 @@ canvas{width:100%;height:120px;display:block;}
 .brand{background:linear-gradient(135deg,#4a90e2,#6ab7ff);border-radius:16px;padding:18px;color:#fff;text-align:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(74,144,226,.25);}
 .brand .bn{font-size:20px;font-weight:800;letter-spacing:2px;}
 .brand .bs{font-size:12px;opacity:.92;margin-top:4px;}
+.fullscreen{position:fixed;inset:0;background:#fff;z-index:200;display:flex;flex-direction:column;padding:14px;box-sizing:border-box;}
+.fullhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-weight:700;font-size:15px;}
+.fullscreen textarea{flex:1;width:100%;resize:none;font-size:16px;line-height:1.6;border:1px solid var(--line);border-radius:10px;padding:10px;font-family:inherit;background:#fafbfc;color:var(--text);box-sizing:border-box;}
 </style>
 </head>
 <body>
@@ -126,17 +129,28 @@ canvas{width:100%;height:120px;display:block;}
 
     <!-- 复盘表 -->
     <section class="page" id="p_review">
-      <div class="card"><h3>📝 今日复盘</h3>
+      <div class="tabs" id="reviewTabs">
+        <button data-k="day" class="active">日复盘</button>
+        <button data-k="week">周复盘</button>
+        <button data-k="month">月复盘</button>
+        <button data-k="year">年复盘</button>
+        <button data-k="memo">备忘</button>
+      </div>
+      <div class="card">
+        <h3 id="reviewTitle">每日复盘</h3>
         <div class="grid2" style="margin-bottom:8px;">
           <div class="stat"><div class="n" id="rvPct">0%</div><div class="l">计划完成率</div></div>
           <div class="stat"><div class="n" id="rvCnt">0/0</div><div class="l">已完成/总</div></div>
         </div>
         <div class="bar"><i id="rvBar" style="width:0%"></i></div>
-        <div class="muted" style="margin:10px 0 4px;">今日计划（点击打钩）</div>
+        <div class="muted" style="margin:10px 0 4px;" id="rvPlanHint">今日计划（点击打钩）</div>
         <div id="reviewPlanList"></div>
-        <div class="muted" style="margin:12px 0 4px;">今日总结</div>
+        <div class="muted" style="margin:12px 0 4px;">总结</div>
         <textarea id="rvSummary" placeholder="今天最大的收获 / 反思…"></textarea>
-        <button class="btn" style="margin-top:10px;width:100%" onclick="saveReview()">保存复盘</button>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn ghost sm" onclick="openFull('rvSummary','复盘总结')">⛶ 全屏</button>
+          <button class="btn" style="flex:1" onclick="saveReview()">保存复盘</button>
+        </div>
       </div>
       <div class="card"><h3>📖 历史复盘</h3><div id="reviewList"></div></div>
     </section>
@@ -147,29 +161,24 @@ canvas{width:100%;height:120px;display:block;}
         <h3>✍️ 每日写作</h3>
         <input id="wrTitle" placeholder="标题（可选）" style="margin-bottom:8px;">
         <textarea id="wrBody" placeholder="今天想写点什么？文案、想法、脚本都行…"></textarea>
-        <button class="btn" style="margin-top:10px;width:100%" onclick="saveWriting()">保存</button>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn ghost sm" onclick="openFull('wrBody','写作正文')">⛶ 全屏</button>
+          <button class="btn" style="flex:1" onclick="saveWriting()">保存</button>
+        </div>
       </div>
       <div class="card"><h3>📚 写作历史</h3><div id="writingList"></div></div>
     </section>
 
     <!-- 灵感库 -->
     <section class="page" id="p_idea">
-      <div class="tabs" id="ideaTabs">
-        <button data-t="all" class="active">全部</button>
-        <button data-t="hot">热点二创</button>
-        <button data-t="idea">一般灵感</button>
-      </div>
       <div class="card">
-        <h3>💡 新增灵感 / 热点</h3>
-        <div class="tagpick" id="ideaType">
-          <span data-v="idea" class="on">一般灵感</span>
-          <span data-v="hot">热点二创</span>
+        <h3>💡 新增灵感</h3>
+        <input id="idSource" placeholder="灵感来源，如：刷抖音看到的 / 朋友说的 / 自己想到的">
+        <textarea id="idContent" placeholder="灵感内容…" style="margin-top:8px;"></textarea>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn ghost sm" onclick="openFull('idContent','灵感内容')">⛶ 全屏</button>
+          <button class="btn" style="flex:1" onclick="saveIdea()">保存灵感</button>
         </div>
-        <input id="idTitle" placeholder="标题 / 热点事件">
-        <input id="idAngle" placeholder="切入角度（热点二创填）" style="margin-top:8px;">
-        <textarea id="idCopy" placeholder="可直接复制的口播/文案（一键复制用）" style="margin-top:8px;"></textarea>
-        <input id="idTag" placeholder="标签，如 穿搭/引流" style="margin-top:8px;">
-        <button class="btn" style="margin-top:10px;width:100%" onclick="saveIdea()">保存灵感</button>
       </div>
       <div id="ideaList"></div>
     </section>
@@ -205,6 +214,10 @@ canvas{width:100%;height:120px;display:block;}
   <nav class="bottom-nav" id="nav"></nav>
 </div>
 <div class="toast" id="toast"></div>
+<div class="fullscreen" id="fullOverlay" style="display:none">
+  <div class="fullhead"><span id="fullTitle"></span><button class="btn ghost sm" onclick="closeFull()">完成</button></div>
+  <textarea id="fullInput"></textarea>
+</div>
 
 <script>
 /* =========================================================================
@@ -265,6 +278,22 @@ const today=()=>new Date().toISOString().slice(0,10);
 const todayCN=()=>{const d=new Date();return `${d.getMonth()+1}月${d.getDate()}日`;};
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400);}
 
+/* ---------- 全屏编辑 ---------- */
+let fullReturnId=null;
+function openFull(id,title){
+  fullReturnId=id;
+  const src=document.getElementById(id);
+  document.getElementById('fullInput').value=src.value;
+  document.getElementById('fullTitle').textContent=title||'';
+  document.getElementById('fullOverlay').style.display='flex';
+  setTimeout(()=>document.getElementById('fullInput').focus(),50);
+}
+function closeFull(){
+  if(fullReturnId)document.getElementById(fullReturnId).value=document.getElementById('fullInput').value;
+  document.getElementById('fullOverlay').style.display='none';
+  fullReturnId=null;
+}
+
 /* ---------- 路由 ---------- */
 const PAGES=[
   {k:'home',t:'首页',ic:'🏠'},
@@ -287,7 +316,7 @@ function go(k){
   document.getElementById('pageTitle').textContent=PAGES.find(p=>p.k===k).t;
   if(k==='home')renderHome();
   if(k==='plan')renderPlan();
-  if(k==='review'){renderReviewPlan();renderReviewList();}
+  if(k==='review'){renderReview();renderReviewList();}
   if(k==='writing')renderWriting();
   if(k==='idea')renderIdeas();
   if(k==='weight')renderWeight();
@@ -341,45 +370,79 @@ function togglePlan(id){const p=load(KEY.plans,{day:[],week:[],month:[],year:[],
 function delPlan(id){const p=load(KEY.plans,{day:[],week:[],month:[],year:[],memo:[]});p[planCur]=p[planCur].filter(x=>x.id!==id);save(KEY.plans,p);renderPlan();}
 
 /* ---------- 复盘表 ---------- */
-let reviews=load(KEY.review,[]);
-function renderReviewPlan(){
+let reviews=load(KEY.review,[]).map(r=>({...r,type:r.type||'day'}));
+let reviewCur='day';let reviewEditItems=[];let editingReviewId=null;
+const reviewNames={day:'每日复盘',week:'每周复盘',month:'每月复盘',year:'每年复盘',memo:'备忘复盘'};
+document.getElementById('reviewTabs').addEventListener('click',e=>{
+  if(e.target.dataset.k){reviewCur=e.target.dataset.k;editingReviewId=null;
+    document.querySelectorAll('#reviewTabs button').forEach(b=>b.classList.toggle('active',b.dataset.k===reviewCur));
+    document.getElementById('rvSummary').value='';
+    renderReview();}
+});
+function renderReview(){
+  document.getElementById('reviewTitle').textContent=reviewNames[reviewCur];
   const plans=load(KEY.plans,{day:[],week:[],month:[],year:[],memo:[]});
-  const list=plans.day||[];
+  const list=plans[reviewCur]||[];
+  reviewEditItems=list.map(it=>({text:it.text,done:it.done}));
+  document.getElementById('rvPlanHint').textContent=planNames[reviewCur].replace('计划','')+'计划（点击打钩）';
+  paintReviewItems();
+}
+function paintReviewItems(){
   const box=document.getElementById('reviewPlanList');
-  if(!list.length){box.innerHTML='<div class="muted" style="padding:8px 0;">今日计划为空，去「计划表」加一条</div>';}
+  if(!reviewEditItems.length){box.innerHTML='<div class="muted" style="padding:8px 0;">'+planNames[reviewCur].replace('计划','')+'计划为空，去「计划表」加一条</div>';}
   else{
-    box.innerHTML=list.map(it=>`<div class="item ${it.done?'done':''}">
-      <div class="cb ${it.done?'on':''}" onclick="togglePlanFromReview('${it.id}')">${it.done?'✓':''}</div>
+    box.innerHTML=reviewEditItems.map((it,i)=>`<div class="item ${it.done?'done':''}">
+      <div class="cb ${it.done?'on':''}" onclick="toggleReviewItem(${i})">${it.done?'✓':''}</div>
       <div class="txt">${esc(it.text)}</div></div>`).join('');
   }
-  const done=list.filter(x=>x.done).length,total=list.length;
+  const done=reviewEditItems.filter(x=>x.done).length,total=reviewEditItems.length;
   const rate=total?Math.round(done/total*100):0;
   document.getElementById('rvPct').textContent=rate+'%';
   document.getElementById('rvCnt').textContent=done+'/'+total;
   document.getElementById('rvBar').style.width=rate+'%';
 }
-function togglePlanFromReview(id){
-  const p=load(KEY.plans,{day:[],week:[],month:[],year:[],memo:[]});
-  p.day.forEach(x=>{if(x.id===id)x.done=!x.done;});save(KEY.plans,p);
-  renderReviewPlan();if(planCur==='day')renderPlan();
-}
+function toggleReviewItem(i){reviewEditItems[i].done=!reviewEditItems[i].done;paintReviewItems();}
 function saveReview(){
-  const plans=load(KEY.plans,{day:[],week:[],month:[],year:[],memo:[]});
-  const list=plans.day||[];
-  const done=list.filter(x=>x.done).length,total=list.length;
-  const r={id:uid(),date:today(),rate:total?Math.round(done/total*100):0,summary:document.getElementById('rvSummary').value.trim()};
-  reviews.unshift(r);save(KEY.review,reviews);toast('复盘已保存');
+  const done=reviewEditItems.filter(x=>x.done).length,total=reviewEditItems.length;
+  const r={id:editingReviewId||uid(),type:reviewCur,date:today(),rate:total?Math.round(done/total*100):0,
+    summary:document.getElementById('rvSummary').value.trim(),
+    items:reviewEditItems.map(x=>({text:x.text,done:x.done}))};
+  if(editingReviewId){const i=reviews.findIndex(x=>x.id===editingReviewId);if(i>=0)reviews[i]=r;else reviews.unshift(r);}
+  else reviews.unshift(r);
+  save(KEY.review,reviews);toast('复盘已保存');
+  editingReviewId=null;
   document.getElementById('rvSummary').value='';
   renderReviewList();
 }
 function renderReviewList(){
   const box=document.getElementById('reviewList');
-  if(!reviews.length){box.innerHTML='<div class="muted" style="padding:10px 0;">暂无复盘</div>';return;}
-  box.innerHTML=reviews.slice(0,15).map(r=>`<div class="card" style="margin-bottom:8px;box-shadow:none;border:1px solid var(--line)">
-    <div class="row" style="justify-content:space-between"><b>${r.date}</b><span class="chip">完成 ${r.rate}%</span></div>
+  const list=reviews.filter(r=>r.type===reviewCur);
+  if(!list.length){box.innerHTML='<div class="muted" style="padding:10px 0;">暂无'+reviewNames[reviewCur]+'</div>';return;}
+  box.innerHTML=list.map(r=>`<div class="card" style="margin-bottom:8px;box-shadow:none;border:1px solid var(--line)">
+    <div class="row" style="justify-content:space-between">
+      <b>${r.date}</b>
+      <div>
+        <span class="chip">完成 ${r.rate}%</span>
+        <span class="del" onclick="editReview('${r.id}')">✏️</span>
+        <span class="del" onclick="delReview('${r.id}')">🗑</span>
+      </div>
+    </div>
     ${r.summary?`<div style="margin-top:4px;font-size:13px">${esc(r.summary)}</div>`:''}
+    ${r.items&&r.items.length?`<div class="muted" style="margin-top:4px">✓ ${r.items.filter(x=>x.done).length}/${r.items.length} 项已勾</div>`:''}
   </div>`).join('');
 }
+function editReview(id){
+  const r=reviews.find(x=>x.id===id);if(!r)return;
+  reviewCur=r.type;editingReviewId=id;
+  document.querySelectorAll('#reviewTabs button').forEach(b=>b.classList.toggle('active',b.dataset.k===reviewCur));
+  document.getElementById('reviewTitle').textContent=reviewNames[reviewCur];
+  reviewEditItems=(r.items||[]).map(x=>({text:x.text,done:x.done}));
+  document.getElementById('rvSummary').value=r.summary||'';
+  document.getElementById('rvPlanHint').textContent=planNames[reviewCur].replace('计划','')+'计划（点击打钩）';
+  paintReviewItems();
+  toast('已载入，修改后点保存');
+}
+function delReview(id){reviews=reviews.filter(x=>x.id!==id);save(KEY.review,reviews);renderReviewList();}
 
 /* ---------- 每日写作 ---------- */
 let writings=load(KEY.writing,[]);
@@ -401,55 +464,26 @@ function renderWriting(){
 function delWriting(id){writings=writings.filter(x=>x.id!==id);save(KEY.writing,writings);renderWriting();}
 
 /* ---------- 灵感库 ---------- */
-let ideas=load(KEY.ideas,[]);let ideaCur='all';let ideaType='idea';
-document.getElementById('ideaTabs').addEventListener('click',e=>{
-  if(e.target.dataset.t){ideaCur=e.target.dataset.t;
-    document.querySelectorAll('#ideaTabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===ideaCur));
-    renderIdeas();}
-});
-document.getElementById('ideaType').addEventListener('click',e=>{
-  if(e.target.dataset.v){ideaType=e.target.dataset.v;
-    document.querySelectorAll('#ideaType span').forEach(s=>s.classList.toggle('on',s.dataset.v===ideaType));}
-});
+let ideas=load(KEY.ideas,[]);
 function saveIdea(){
-  const title=document.getElementById('idTitle').value.trim();if(!title)return;
-  ideas.unshift({id:uid(),type:ideaType,title,
-    angle:document.getElementById('idAngle').value.trim(),
-    copy:document.getElementById('idCopy').value.trim(),
-    tag:document.getElementById('idTag').value.trim(),date:today()});
+  const source=document.getElementById('idSource').value.trim();
+  const content=document.getElementById('idContent').value.trim();
+  if(!source&&!content)return;
+  ideas.unshift({id:uid(),source,content,date:today()});
   save(KEY.ideas,ideas);toast('灵感已存');
-  ['idTitle','idAngle','idCopy','idTag'].forEach(id=>document.getElementById(id).value='');
-  renderIdeas();if(ideaType==='idea')renderHome();
+  document.getElementById('idSource').value='';document.getElementById('idContent').value='';
+  renderIdeas();renderHome();
 }
 function renderIdeas(){
   const box=document.getElementById('ideaList');
-  let list=ideas;
-  if(ideaCur!=='all')list=ideas.filter(x=>x.type===ideaCur);
-  if(!list.length){box.innerHTML='<div class="muted" style="padding:10px 0;">暂无${ideaCur==="hot"?"热点":"灵感"}</div>';return;}
-  box.innerHTML=list.map(it=>`<div class="card" style="margin-bottom:8px">
-    <div class="row" style="justify-content:space-between">
-      <b>${esc(it.title)}</b>
-      <span class="chip">${it.type==='hot'?'🔥热点':'💡灵感'}</span>
-    </div>
-    ${it.angle?`<div class="muted" style="margin-top:6px">🎯 切入：${esc(it.angle)}</div>`:''}
-    ${it.copy?`<div style="margin-top:6px;font-size:13px;white-space:pre-wrap;background:#fafbfc;padding:8px;border-radius:8px">${esc(it.copy)}</div>
-      <button class="btn ghost sm" style="margin-top:6px" onclick="copyText(\`${esc(it.copy).replace(/`/g,'')}\`)">📋 复制文案</button>`:''}
-    ${it.tag?`<div style="margin-top:6px"><span class="chip">#${esc(it.tag)}</span></div>`:''}
-    <div class="row" style="margin-top:8px;gap:6px">
-      <button class="btn ghost sm" onclick="openApp('douyin','${it.id}')">抖音</button>
-      <button class="btn ghost sm" onclick="openApp('bilibili','${it.id}')">B站</button>
-      <button class="btn ghost sm" onclick="openApp('xhs','${it.id}')">小红书</button>
-      <div class="del" onclick="delIdea('${it.id}')">删除</div>
-    </div>
+  if(!ideas.length){box.innerHTML='<div class="muted" style="padding:10px 0;">还没有灵感，上面记一条吧</div>';return;}
+  box.innerHTML=ideas.slice(0,30).map(it=>`<div class="card" style="margin-bottom:8px">
+    ${it.source?`<div class="muted" style="margin-bottom:4px">📌 来源：${esc(it.source)}</div>`:''}
+    <div style="margin-top:4px;font-size:13px;white-space:pre-wrap">${esc(it.content)}</div>
+    <div class="del" style="text-align:right;margin-top:6px" onclick="delIdea('${it.id}')">删除</div>
   </div>`).join('');
 }
-function copyText(t){navigator.clipboard?.writeText(t);toast('已复制');}
-function openApp(app,id){
-  const map={douyin:'snssdk1128://',bilibili:'bilibili://',xhs:'xhsdiscover://'};
-  toast('已尝试唤起'+app+'，若未跳转请手动打开粘贴');
-  try{location.href=map[app];}catch(e){}
-}
-function delIdea(id){ideas=ideas.filter(x=>x.id!==id);save(KEY.ideas,ideas);renderIdeas();}
+function delIdea(id){ideas=ideas.filter(x=>x.id!==id);save(KEY.ideas,ideas);renderIdeas();renderHome();}
 
 /* ---------- 体重管理 ---------- */
 let weights=load(KEY.weight,[]).map(w=>({id:w.id||uid(),date:w.date,time:w.time||'',value:w.value}));let diets=load(KEY.diet,[]);
