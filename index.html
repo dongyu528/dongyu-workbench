@@ -177,7 +177,7 @@ canvas{width:100%;height:120px;display:block;}
         <textarea id="wrBody" placeholder="今天想写点什么？文案、想法、脚本都行…"></textarea>
         <div class="row" style="margin-top:8px;">
           <button class="btn ghost sm" onclick="openFull('wrBody','写作正文')">⛶ 全屏</button>
-          <button class="btn" style="flex:1" onclick="saveWriting()">保存</button>
+          <button class="btn" id="wrSave" style="flex:1" onclick="saveWriting()">保存</button>
         </div>
       </div>
       <div class="card"><h3>📚 写作历史</h3><div id="writingList"></div></div>
@@ -191,7 +191,7 @@ canvas{width:100%;height:120px;display:block;}
         <textarea id="idContent" placeholder="灵感内容…" style="margin-top:8px;"></textarea>
         <div class="row" style="margin-top:8px;">
           <button class="btn ghost sm" onclick="openFull('idContent','灵感内容')">⛶ 全屏</button>
-          <button class="btn" style="flex:1" onclick="saveIdea()">保存灵感</button>
+          <button class="btn" id="idSaveIdea" style="flex:1" onclick="saveIdea()">保存灵感</button>
         </div>
       </div>
       <div id="ideaList"></div>
@@ -511,12 +511,30 @@ function delReview(id){reviews=reviews.filter(x=>x.id!==id);save(KEY.review,revi
 
 /* ---------- 每日写作 ---------- */
 let writings=load(KEY.writing,[]);
+let editingWritingId=null;
 function saveWriting(){
   const body=document.getElementById('wrBody').value.trim();if(!body)return;
-  writings.unshift({id:uid(),date:today(),title:document.getElementById('wrTitle').value.trim(),body});
+  const title=document.getElementById('wrTitle').value.trim();
+  if(editingWritingId){
+    const i=writings.findIndex(x=>x.id===editingWritingId);
+    if(i>=0)writings[i]={id:editingWritingId,date:writings[i].date,title,body};
+    editingWritingId=null;
+  }else{
+    writings.unshift({id:uid(),date:today(),title,body});
+  }
   save(KEY.writing,writings);toast('已保存');
   document.getElementById('wrTitle').value='';document.getElementById('wrBody').value='';
+  document.getElementById('wrSave').textContent='保存';
   renderWriting();
+}
+function editWriting(id){
+  const w=writings.find(x=>x.id===id);if(!w)return;
+  editingWritingId=id;
+  document.getElementById('wrTitle').value=w.title||'';
+  document.getElementById('wrBody').value=w.body||'';
+  document.getElementById('wrSave').textContent='更新';
+  toast('已载入，改完点更新');
+  document.getElementById('wrTitle').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderWriting(){
   const box=document.getElementById('writingList');
@@ -524,20 +542,40 @@ function renderWriting(){
   box.innerHTML=writings.slice(0,20).map(w=>`<div class="card" style="margin-bottom:8px;box-shadow:none;border:1px solid var(--line)">
     <div class="row" style="justify-content:space-between"><b>${esc(w.title||'无标题')}</b><span class="muted">${w.date}</span></div>
     <div style="margin-top:6px;font-size:13px;white-space:pre-wrap">${esc(w.body).slice(0,200)}</div>
-    <div class="del" style="text-align:right" onclick="delWriting('${w.id}')">删除</div></div>`).join('');
+    <div class="row" style="justify-content:flex-end;margin-top:6px;gap:14px">
+      <span class="del" onclick="editWriting('${w.id}')">✏️ 编辑</span>
+      <span class="del" onclick="delWriting('${w.id}')">🗑 删除</span>
+    </div></div>`).join('');
 }
 function delWriting(id){writings=writings.filter(x=>x.id!==id);save(KEY.writing,writings);renderWriting();}
 
 /* ---------- 灵感库 ---------- */
 let ideas=load(KEY.ideas,[]);
+let editingIdeaId=null;
 function saveIdea(){
   const source=document.getElementById('idSource').value.trim();
   const content=document.getElementById('idContent').value.trim();
   if(!source&&!content)return;
-  ideas.unshift({id:uid(),source,content,date:today()});
+  if(editingIdeaId){
+    const i=ideas.findIndex(x=>x.id===editingIdeaId);
+    if(i>=0)ideas[i]={id:editingIdeaId,source,content,date:ideas[i].date};
+    editingIdeaId=null;
+  }else{
+    ideas.unshift({id:uid(),source,content,date:today()});
+  }
   save(KEY.ideas,ideas);toast('灵感已存');
   document.getElementById('idSource').value='';document.getElementById('idContent').value='';
+  document.getElementById('idSaveIdea').textContent='保存灵感';
   renderIdeas();renderHome();
+}
+function editIdea(id){
+  const it=ideas.find(x=>x.id===id);if(!it)return;
+  editingIdeaId=id;
+  document.getElementById('idSource').value=it.source||'';
+  document.getElementById('idContent').value=it.content||'';
+  document.getElementById('idSaveIdea').textContent='更新灵感';
+  toast('已载入，改完点更新');
+  document.getElementById('idSource').scrollIntoView({behavior:'smooth',block:'center'});
 }
 function renderIdeas(){
   const box=document.getElementById('ideaList');
@@ -545,7 +583,10 @@ function renderIdeas(){
   box.innerHTML=ideas.slice(0,30).map(it=>`<div class="card" style="margin-bottom:8px">
     ${it.source?`<div class="muted" style="margin-bottom:4px">📌 来源：${esc(it.source)}</div>`:''}
     <div style="margin-top:4px;font-size:13px;white-space:pre-wrap">${esc(it.content)}</div>
-    <div class="del" style="text-align:right;margin-top:6px" onclick="delIdea('${it.id}')">删除</div>
+    <div class="row" style="justify-content:flex-end;margin-top:6px;gap:14px">
+      <span class="del" onclick="editIdea('${it.id}')">✏️ 编辑</span>
+      <span class="del" onclick="delIdea('${it.id}')">🗑 删除</span>
+    </div>
   </div>`).join('');
 }
 function delIdea(id){ideas=ideas.filter(x=>x.id!==id);save(KEY.ideas,ideas);renderIdeas();renderHome();}
