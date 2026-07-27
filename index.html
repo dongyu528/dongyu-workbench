@@ -199,11 +199,6 @@ canvas{width:100%;height:120px;display:block;}
 
     <!-- 体重管理 -->
     <section class="page" id="p_weight">
-      <div class="wtabs">
-        <button class="wtab on" data-wt="diary" onclick="wtGo('diary')">日记</button>
-        <button class="wtab" data-wt="trend" onclick="wtGo('trend')">趋势</button>
-      </div>
-
       <!-- 子页A：日记 -->
       <div id="wtDiary">
         <div class="card">
@@ -217,9 +212,8 @@ canvas{width:100%;height:120px;display:block;}
           <div class="bignum"><span id="wtBig">--</span><span class="u" id="wtBigUnit">kg</span></div>
           <div class="muted" style="text-align:center" id="wtBigAlt"></div>
           <button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="openTarget()">🎯 设置目标</button>
-          <div class="grid3" style="margin-top:12px;">
+          <div class="grid2" style="margin-top:12px;">
             <div class="stat"><div class="n" id="wtDelta">--</div><div class="l">较昨日</div></div>
-            <div class="stat"><div class="n" id="wtFat">--</div><div class="l">体脂率</div></div>
             <div class="stat"><div class="n" id="wtGoal">未设置</div><div class="l">距目标</div></div>
           </div>
           <div class="bar" id="wtGoalBar" style="display:none"><i id="wtGoalFill"></i></div>
@@ -229,21 +223,6 @@ canvas{width:100%;height:120px;display:block;}
           <div id="wtList"></div>
           <button class="btn" style="margin-top:10px;width:100%" onclick="openAddWeight()">+ 记录体重</button>
         </div>
-        <div class="card">
-          <h3>🍱 今日饮食 <span class="muted">(目标 1500 kcal)</span></h3>
-          <div class="row">
-            <input id="dietFood" placeholder="食物，如 米饭">
-            <input id="dietKcal" type="number" placeholder="热量" style="width:100px;">
-            <button class="btn sm" onclick="addDiet()">+</button>
-          </div>
-          <div class="row" style="margin:8px 0;" id="quickFoods"></div>
-          <div id="dietList"></div>
-          <div class="muted" style="margin-top:6px;">今日已摄入 <span class="kcal" id="dietSum">0</span> kcal</div>
-        </div>
-      </div>
-
-      <!-- 子页B：趋势 -->
-      <div id="wtTrend" style="display:none">
         <div class="card">
           <div class="row" style="justify-content:space-between;align-items:center;">
             <h3 style="margin:0">📈 趋势</h3>
@@ -261,6 +240,8 @@ canvas{width:100%;height:120px;display:block;}
           <div class="muted" style="margin-top:6px" id="trendTip">点圆点查看当天数据</div>
         </div>
       </div>
+
+      <!-- 趋势已并入日记页 -->
 
       <!-- 设置目标弹层 -->
       <div class="modal" id="targetModal">
@@ -287,8 +268,6 @@ canvas{width:100%;height:120px;display:block;}
         <div class="modal-box">
           <h3>记录体重</h3>
           <input id="awVal" type="number" step="0.1" placeholder="体重">
-          <div class="muted" style="margin-top:6px">体脂率（选填）</div>
-          <input id="awFat" type="number" step="0.1" placeholder="如 28">
           <div class="row" style="margin-top:16px;justify-content:flex-end">
             <button class="btn ghost" onclick="closeModal('addWModal')">取消</button>
             <button class="btn" onclick="submitAddWeight()">保存</button>
@@ -355,7 +334,7 @@ function applyConfig(){
 const KEY={
   plans:'wb_plans', review:'wb_review',
   writing:'wb_writing', ideas:'wb_ideas',
-  weight:'wb_weight', diet:'wb_diet', target:'wb_weight_target'
+  weight:'wb_weight', target:'wb_weight_target'
 };
 const load=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -572,38 +551,35 @@ function renderIdeas(){
 function delIdea(id){ideas=ideas.filter(x=>x.id!==id);save(KEY.ideas,ideas);renderIdeas();renderHome();}
 
 /* ---------- 体重管理 ---------- */
-let weights=load(KEY.weight,[]).map(w=>({id:w.id||uid(),date:w.date,time:w.time||'',value:w.value,fat:w.fat!=null?w.fat:null}));
-let diets=load(KEY.diet,[]);
+let weights=load(KEY.weight,[]).map(w=>({id:w.id||uid(),date:w.date,time:w.time||'',value:w.value}));
 let target=load(KEY.target,null);
 let curUnit=target&&target.unit?target.unit:'kg';
 let wtTab='diary', trendRange=7, tgUnit='kg';
-const QUICK=[{n:'米饭',k:116},{n:'鸡蛋',k:70},{n:'鸡肉',k:133},{n:'面条',k:280},{n:'苹果',k:52},{n:'牛奶',k:65}];
 function toU(v){return curUnit==='jin'?+(v*2).toFixed(1):v;}
+function toUOf(v,unit){return unit==='jin'?+(v*2).toFixed(1):v;}
 function uLab(){return curUnit==='jin'?'斤':'kg';}
 function lastOfDay(arr,d){const f=arr.filter(x=>x.date===d);return f.length?f[f.length-1]:null;}
-function renderWeight(){if(wtTab==='diary')renderDiary();else renderTrend();}
-function wtGo(t){wtTab=t;document.querySelectorAll('.wtab').forEach(b=>b.classList.toggle('on',b.dataset.wt===t));document.getElementById('wtDiary').style.display=t==='diary'?'block':'none';document.getElementById('wtTrend').style.display=t==='trend'?'block':'none';renderWeight();}
+function renderWeight(){renderDiary();renderTrend();}
+function wtGo(t){wtTab=t;renderWeight();}
 function setUnit(u){curUnit=u;if(target){target.unit=u;save(KEY.target,target);}document.querySelectorAll('#unitPick span').forEach(s=>s.classList.toggle('on',s.dataset.u===u));renderWeight();renderHome();}
 function tgSetUnit(u){tgUnit=u;document.querySelectorAll('#tgUnit span').forEach(s=>s.classList.toggle('on',s.dataset.u===u));}
 function showModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
-function openTarget(){if(target){document.getElementById('tgStart').value=target.startWeight;document.getElementById('tgGoal').value=target.goalWeight;tgUnit=target.unit||'kg';}else{document.getElementById('tgStart').value='';document.getElementById('tgGoal').value='';tgUnit='kg';}document.querySelectorAll('#tgUnit span').forEach(s=>s.classList.toggle('on',s.dataset.u===tgUnit));showModal('targetModal');}
-function saveTarget(){const s=+document.getElementById('tgStart').value,g=+document.getElementById('tgGoal').value;if(!s||!g)return;target={startWeight:s,goalWeight:g,unit:tgUnit,setDate:today()};save(KEY.target,target);curUnit=tgUnit;document.querySelectorAll('#unitPick span').forEach(x=>x.classList.toggle('on',x.dataset.u===curUnit));closeModal('targetModal');toast('目标已保存');renderWeight();renderHome();}
-function openAddWeight(){document.getElementById('awVal').value='';document.getElementById('awFat').value='';showModal('addWModal');}
-function submitAddWeight(){const v=+document.getElementById('awVal').value;if(!v)return;const fat=document.getElementById('awFat').value;const d=new Date();const time=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');weights.push({id:uid(),date:today(),time,value:v,fat:fat?+fat:null});save(KEY.weight,weights);closeModal('addWModal');toast('已记录');renderWeight();renderHome();}
+function openTarget(){if(target){tgUnit=target.unit||'kg';document.getElementById('tgStart').value=toUOf(target.startWeight,tgUnit);document.getElementById('tgGoal').value=toUOf(target.goalWeight,tgUnit);}else{tgUnit='kg';document.getElementById('tgStart').value='';document.getElementById('tgGoal').value='';}document.querySelectorAll('#tgUnit span').forEach(s=>s.classList.toggle('on',s.dataset.u===tgUnit));showModal('targetModal');}
+function saveTarget(){let s=+document.getElementById('tgStart').value,g=+document.getElementById('tgGoal').value;if(!s||!g)return;if(tgUnit==='jin'){s=s/2;g=g/2;}target={startWeight:s,goalWeight:g,unit:tgUnit,setDate:today()};save(KEY.target,target);curUnit=tgUnit;document.querySelectorAll('#unitPick span').forEach(x=>x.classList.toggle('on',x.dataset.u===curUnit));closeModal('targetModal');toast('目标已保存');renderWeight();renderHome();}
+function openAddWeight(){const aw=document.getElementById('awVal');aw.value='';aw.placeholder='体重（'+uLab()+'）';showModal('addWModal');}
+function submitAddWeight(){let v=+document.getElementById('awVal').value;if(!v)return;if(curUnit==='jin')v=v/2;const d=new Date();const time=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');weights.push({id:uid(),date:today(),time,value:v});save(KEY.weight,weights);closeModal('addWModal');toast('已记录');renderWeight();renderHome();}
 function delWeight(id){weights=weights.filter(x=>x.id!==id);save(KEY.weight,weights);renderWeight();renderHome();}
 function renderDiary(){
   const tW=lastOfDay(weights,today());
   const y=new Date();y.setDate(y.getDate()-1);const yStr=y.toISOString().slice(0,10);const yW=lastOfDay(weights,yStr);
   document.getElementById('wtBig').textContent=tW?toU(tW.value):'--';
   document.getElementById('wtBigUnit').textContent=uLab();
-  document.getElementById('wtBigAlt').textContent=(tW&&curUnit==='jin')?('≈ '+toU(tW.value).toFixed(1)+' '+uLab()):'';
+  document.getElementById('wtBigAlt').textContent=(tW&&curUnit==='jin')?('≈ '+(+tW.value).toFixed(1)+' kg'):'';
   const dlt=(tW&&yW)?(toU(tW.value)-toU(yW.value)):null;
   const dEl=document.getElementById('wtDelta');
   dEl.textContent=dlt==null?'--':((dlt>=0?'+':'')+dlt.toFixed(1));
   dEl.style.color=dlt==null?'var(--primary)':(dlt>0?'var(--primary)':'var(--ok)');
-  const fatW=[...weights].reverse().find(x=>x.fat!=null);
-  document.getElementById('wtFat').textContent=fatW?fatW.fat+'%':'--';
   const gEl=document.getElementById('wtGoal'),bar=document.getElementById('wtGoalBar'),fill=document.getElementById('wtGoalFill');
   if(target&&weights.length){
     const cur=tW?tW.value:weights[weights.length-1].value;
@@ -616,13 +592,8 @@ function renderDiary(){
   else{gEl.textContent='未设置';bar.style.display='none';}
   const box=document.getElementById('wtList');
   if(!weights.length){box.innerHTML='<div class="muted" style="padding:6px 0;">还没有记录</div>';}
-  else{box.innerHTML=weights.slice(-12).reverse().map(w=>`<div class="item"><div class="txt">${w.date} ${w.time||''}${w.fat!=null?' · 体脂'+w.fat+'%':''}</div><div class="txt" style="text-align:right">${toU(w.value)} ${uLab()}</div><div class="del" onclick="delWeight('${w.id}')">×</div></div>`).join('');}
-  const todayDiet=diets.filter(d=>d.date===today());
-  document.getElementById('quickFoods').innerHTML=QUICK.map(f=>`<button class="btn ghost sm" onclick="addDietQuick('${f.n}',${f.k})">${f.n} ${f.k}</button>`).join('');
-  const dl=document.getElementById('dietList');
-  if(!todayDiet.length)dl.innerHTML='<div class="muted" style="padding:6px 0;">今天还没吃</div>';
-  else dl.innerHTML=todayDiet.map(d=>`<div class="item"><div class="txt">${esc(d.food)}</div><div class="txt" style="text-align:right">${d.kcal} kcal</div><div class="del" onclick="delDiet('${d.id}')">×</div></div>`).join('');
-  document.getElementById('dietSum').textContent=todayDiet.reduce((s,d)=>s+d.kcal,0);
+  else{box.innerHTML=weights.slice(-12).reverse().map(w=>`<div class="item"><div class="txt">${w.date} ${w.time||''}</div><div class="txt" style="text-align:right">${toU(w.value)} ${uLab()}</div><div class="del" onclick="delWeight('${w.id}')">×</div></div>`).join('');}
+  /* 今日饮食已移除 */
 }
 function setRange(r){trendRange=r;document.querySelectorAll('#trendRange button').forEach(b=>b.classList.toggle('on',+b.dataset.r===r));renderTrend();}
 function renderTrend(){
@@ -641,9 +612,7 @@ function renderTrend(){
   data.forEach((w,i)=>{const px=pad+i*(W-2*pad)/(data.length-1||1);const py=H-pad-(vals[i]-min)/(max-min||1)*(H-2*pad);ctx.fillStyle=CONFIG.primary;ctx.beginPath();ctx.arc(px,py,3,0,7);ctx.fill();ctx.fillStyle='#9aa0a6';ctx.font='10px sans-serif';ctx.fillText(toU(vals[i]).toFixed(1),px-8,py-6);});
   cv.onclick=(e)=>{const rect=cv.getBoundingClientRect();const x=e.clientX-rect.left;let best=0,bd=1e9;data.forEach((w,i)=>{const px=pad+i*(W-2*pad)/(data.length-1||1);if(Math.abs(px-x)<bd){bd=Math.abs(px-x);best=i;}});const w=data[best];document.getElementById('trendTip').textContent=`${w.date} ${w.time||''} · ${toU(w.value)} ${uLab()}${target?(' · 距目标 '+toU(Math.abs(w.value-target.goalWeight)).toFixed(1)+uLab()):''}`;};
 }
-function addDiet(){const f=document.getElementById('dietFood').value.trim();const k=+document.getElementById('dietKcal').value||0;if(!f||!k)return;diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);document.getElementById('dietFood').value='';document.getElementById('dietKcal').value='';renderDiary();}
-function addDietQuick(f,k){diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);renderDiary();}
-function delDiet(id){diets=diets.filter(x=>x.id!==id);save(KEY.diet,diets);renderDiary();}
+/* 饮食相关函数已移除 */
 
 /* ---------- 工具 ---------- */
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
