@@ -125,32 +125,6 @@ canvas{width:100%;height:120px;display:block;}
           <button class="btn ghost sm" data-mod="weight" onclick="go('weight')">⚖️ 称体重</button>
         </div>
       </div>
-      <div class="card"><h3>⚙️ Obsidian 同步设置</h3>
-        <label class="row" style="justify-content:flex-start;gap:8px;margin-bottom:8px;font-size:13px;">
-          <input type="checkbox" id="obOn" style="width:auto"> 启用 Obsidian 同步（把有用内容存进知识库）
-        </label>
-        <div class="muted">接口地址（Obsidian 插件 HTTP 模式）</div>
-        <input id="obUrl" placeholder="http://127.0.0.1:27123" style="margin:4px 0 8px;">
-        <div class="muted">API Key（Obsidian 设置里复制）</div>
-        <input id="obKey" type="password" placeholder="粘贴你的 key" style="margin:4px 0 8px;">
-        <div class="grid2" style="margin-bottom:8px">
-          <div><div class="muted">灵感库目录</div><input id="obFidea" style="margin-top:4px"></div>
-          <div><div class="muted">写作目录</div><input id="obFwriting" style="margin-top:4px"></div>
-          <div><div class="muted">复盘目录</div><input id="obFreview" style="margin-top:4px"></div>
-        </div>
-        <div class="row">
-          <button class="btn ghost sm" onclick="testObsidian()">测试连接</button>
-          <button class="btn sm" style="flex:1" onclick="saveObsidian()">保存设置</button>
-        </div>
-      </div>
-      <div class="card"><h3>💾 数据备份 / 迁移</h3>
-        <div class="muted" style="margin-bottom:8px;font-size:12px;">换设备或要用本地版存 Obsidian 时：先点「导出全部」下载文件，再到另一处点「导入全部」。</div>
-        <div class="row">
-          <button class="btn ghost sm" onclick="exportAll()">⬇️ 导出全部</button>
-          <button class="btn ghost sm" onclick="document.getElementById('impFile').click()">⬆️ 导入全部</button>
-          <input id="impFile" type="file" accept="application/json" style="display:none" onchange="importAll(this)">
-        </div>
-      </div>
     </section>
 
     <!-- 计划表 -->
@@ -199,11 +173,7 @@ canvas{width:100%;height:120px;display:block;}
           <button class="btn" style="flex:1" onclick="saveReview()">保存复盘</button>
         </div>
       </div>
-      <div class="card"><h3>📖 历史复盘</h3>
-        <div class="row" style="justify-content:flex-end;margin:2px 0 10px;">
-          <button class="btn ghost sm" onclick="saveAllToObsidian('review')">📥 全部存入 Obsidian</button>
-        </div>
-        <div id="reviewList"></div></div>
+      <div class="card"><h3>📖 历史复盘</h3><div id="reviewList"></div></div>
     </section>
 
     <!-- 每日写作 -->
@@ -217,11 +187,7 @@ canvas{width:100%;height:120px;display:block;}
           <button class="btn" id="wrSave" style="flex:1" onclick="saveWriting()">保存</button>
         </div>
       </div>
-      <div class="card"><h3>📚 写作历史</h3>
-        <div class="row" style="justify-content:flex-end;margin:2px 0 10px;">
-          <button class="btn ghost sm" onclick="saveAllToObsidian('writing')">📥 全部存入 Obsidian</button>
-        </div>
-        <div id="writingList"></div></div>
+      <div class="card"><h3>📚 写作历史</h3><div id="writingList"></div></div>
     </section>
 
     <!-- 灵感库 -->
@@ -234,9 +200,6 @@ canvas{width:100%;height:120px;display:block;}
           <button class="btn ghost sm" onclick="openFull('idContent','灵感内容')">⛶ 全屏</button>
           <button class="btn" id="idSaveIdea" style="flex:1" onclick="saveIdea()">保存灵感</button>
         </div>
-      </div>
-      <div class="row" style="justify-content:flex-end;margin:6px 0 10px;">
-        <button class="btn ghost sm" onclick="saveAllToObsidian('idea')">📥 全部存入 Obsidian</button>
       </div>
       <div id="ideaList"></div>
     </section>
@@ -383,10 +346,6 @@ const KEY={
 const load=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-/* ---------- Obsidian 同步配置 ---------- */
-const OK='wb_obsidian';
-let OBS=load(OK,{enabled:false,url:'http://127.0.0.1:27123',key:'',
-  folders:{idea:'3-灵感库',writing:'7-每日写作',review:'2-每日复盘'}});
 const today=()=>new Date().toISOString().slice(0,10);
 const todayCN=()=>{const d=new Date();return `${d.getMonth()+1}月${d.getDate()}日`;};
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400);}
@@ -545,7 +504,6 @@ function renderReviewList(){
       <b>${r.date}</b>
       <div>
         <span class="chip">完成 ${r.rate}%</span>
-        <span class="del" onclick="saveToObsidian('review','${r.id}')">📥 存库</span>
         <span class="del" onclick="editReview('${r.id}')">✏️</span>
         <span class="del" onclick="delReview('${r.id}')">🗑</span>
       </div>
@@ -601,7 +559,6 @@ function renderWriting(){
     <div class="row" style="justify-content:space-between"><b>${esc(w.title||'无标题')}</b><span class="muted">${w.date}</span></div>
     <div style="margin-top:6px;font-size:13px;white-space:pre-wrap">${esc(w.body).slice(0,200)}</div>
     <div class="row" style="justify-content:flex-end;margin-top:6px;gap:14px">
-      <span class="del" onclick="saveToObsidian('writing','${w.id}')">📥 存库</span>
       <span class="del" onclick="editWriting('${w.id}')">✏️ 编辑</span>
       <span class="del" onclick="delWriting('${w.id}')">🗑 删除</span>
     </div></div>`).join('');
@@ -643,7 +600,6 @@ function renderIdeas(){
     ${it.source?`<div class="muted" style="margin-bottom:4px">📌 来源：${esc(it.source)}</div>`:''}
     <div style="margin-top:4px;font-size:13px;white-space:pre-wrap">${esc(it.content)}</div>
     <div class="row" style="justify-content:flex-end;margin-top:6px;gap:14px">
-      <span class="del" onclick="saveToObsidian('idea','${it.id}')">📥 存库</span>
       <span class="del" onclick="editIdea('${it.id}')">✏️ 编辑</span>
       <span class="del" onclick="delIdea('${it.id}')">🗑 删除</span>
     </div>
@@ -719,117 +675,7 @@ function renderTrend(){
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 
 /* ---------- 启动 ---------- */
-applyConfig();buildNav();loadObsidianUI();go('home');
-
-/* ===================== Obsidian 同步 ===================== */
-function saveObsidian(){
-  OBS={enabled:document.getElementById('obOn').checked,
-    url:document.getElementById('obUrl').value.trim()||'http://127.0.0.1:27123',
-    key:document.getElementById('obKey').value.trim(),
-    folders:{idea:document.getElementById('obFidea').value.trim()||'3-灵感库',
-      writing:document.getElementById('obFwriting').value.trim()||'7-每日写作',
-      review:document.getElementById('obFreview').value.trim()||'2-每日复盘'}};
-  save(OK,OBS);toast('Obsidian 设置已保存');
-}
-function loadObsidianUI(){
-  if(!document.getElementById('obOn'))return;
-  document.getElementById('obOn').checked=!!OBS.enabled;
-  document.getElementById('obUrl').value=OBS.url||'http://127.0.0.1:27123';
-  document.getElementById('obKey').value=OBS.key||'';
-  document.getElementById('obFidea').value=OBS.folders.idea||'3-灵感库';
-  document.getElementById('obFwriting').value=OBS.folders.writing||'7-每日写作';
-  document.getElementById('obFreview').value=OBS.folders.review||'2-每日复盘';
-}
-function safeName(s){return (s||'未命名').replace(/[\\/:*?"<>|]/g,'-').slice(0,40);}
-async function putToObsidian(folder,filename,md){
-  if(!OBS.enabled){toast('请先在首页开启 Obsidian 同步');return false;}
-  if(!OBS.key){toast('请先在首页填写 API Key');return false;}
-  const base=OBS.url.replace(/\/+$/,'');
-  const path=encodeURIComponent(folder)+'/'+encodeURIComponent(filename);
-  try{
-    const res=await fetch(base+'/vault/'+path,{
-      method:'PUT',
-      headers:{'Authorization':'Bearer '+OBS.key,'Content-Type':'text/markdown'},
-      body:md
-    });
-    if(res.status===204||(res.status>=200&&res.status<300))return true;
-    const t=await res.text().catch(()=> '');
-    console.warn('Obsidian PUT 失败',res.status,t);return false;
-  }catch(e){console.warn('Obsidian 连接错误',e);return false;}
-}
-function buildIdeaMd(it){
-  return '---\ntitle: '+(safeName(it.content).slice(0,30))+'\nsource: 工作台·灵感库\ndate: '+(it.date||'')+'\ntags: [灵感, 工作台]\n---\n\n> 来源：'+(it.source||'未注明')+'\n\n'+(it.content||'')+'\n';
-}
-function buildWritingMd(w){
-  return '---\ntitle: '+safeName(w.title||'无标题')+'\nsource: 工作台·每日写作\ndate: '+(w.date||'')+'\ntags: [写作, 工作台]\n---\n\n# '+(w.title||'无标题')+'\n\n'+(w.body||'')+'\n';
-}
-function buildReviewMd(r){
-  const items=(r.items||[]).map(x=>'- ['+(x.done?'x':' ')+'] '+x.text).join('\n');
-  return '---\ntitle: '+(r.type||'')+'复盘-'+(r.date||'')+'\nsource: 工作台·复盘表\ndate: '+(r.date||'')+'\ntags: [复盘, 工作台]\n---\n\n## 计划完成率 '+(r.rate||0)+'%\n\n'+(items?('### 计划项\n'+items+'\n'):'')+'\n### 总结\n\n'+(r.summary||'（无）')+'\n';
-}
-async function saveToObsidian(type,id){
-  if(!OBS.enabled){toast('请先在首页开启 Obsidian 同步');return;}
-  let item,md,filename,label;
-  if(type==='idea'){item=ideas.find(x=>x.id===id);if(!item)return;md=buildIdeaMd(item);filename='灵感_'+(item.date||'')+'_'+id.slice(0,6)+'.md';label='灵感';}
-  else if(type==='writing'){item=writings.find(x=>x.id===id);if(!item)return;md=buildWritingMd(item);filename='写作_'+(item.date||'')+'_'+id.slice(0,6)+'.md';label='写作';}
-  else if(type==='review'){item=reviews.find(x=>x.id===id);if(!item)return;md=buildReviewMd(item);filename='复盘_'+(item.type||'')+'_'+(item.date||'')+'_'+id.slice(0,6)+'.md';label='复盘';}
-  const ok=await putToObsidian(OBS.folders[type],filename,md);
-  toast(ok?('✅ 已存入 Obsidian（'+label+'）'):'❌ 存入失败，检查 Obsidian 是否开启/已填 Key');
-}
-async function saveAllToObsidian(type){
-  if(!OBS.enabled){toast('请先在首页开启 Obsidian 同步');return;}
-  let list=[];
-  if(type==='idea')list=ideas;
-  else if(type==='writing')list=writings;
-  else if(type==='review')list=reviews;
-  if(!list.length){toast('没有可存的内容');return;}
-  let okc=0;
-  for(const it of list){
-    let md,filename;
-    if(type==='idea'){md=buildIdeaMd(it);filename='灵感_'+(it.date||'')+'_'+it.id.slice(0,6)+'.md';}
-    else if(type==='writing'){md=buildWritingMd(it);filename='写作_'+(it.date||'')+'_'+it.id.slice(0,6)+'.md';}
-    else if(type==='review'){md=buildReviewMd(it);filename='复盘_'+(it.type||'')+'_'+(it.date||'')+'_'+it.id.slice(0,6)+'.md';}
-    if(await putToObsidian(OBS.folders[type],filename,md))okc++;
-  }
-  toast('✅ 存入 '+okc+'/'+list.length+' 条到 Obsidian');
-}
-async function testObsidian(){
-  if(!OBS.url){toast('请先填接口地址');return;}
-  const base=OBS.url.replace(/\/+$/,'');
-  try{
-    const res=await fetch(base+'/',{method:'GET'});
-    if(res.ok)toast('✅ 连接成功，Obsidian 已就绪');
-    else toast('⚠️ 连上了但返回 '+res.status);
-  }catch(e){toast('❌ 连不上，确认 Obsidian 插件已启用且开着');}
-}
-/* ---------- 数据备份 / 迁移 ---------- */
-function exportAll(){
-  const data={plans:load(KEY.plans,{}),review:load(KEY.review,[]),
-    writing:load(KEY.writing,[]),ideas:load(KEY.ideas,[]),
-    weight:load(KEY.weight,[]),target:load(KEY.target,null)};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-  a.download='工作台数据_'+today()+'.json';a.click();
-  toast('已导出，去下载文件夹找');
-}
-function importAll(input){
-  const f=input.files[0];if(!f){return;}
-  const rd=new FileReader();
-  rd.onload=()=>{
-    try{
-      const d=JSON.parse(rd.result);
-      if(d.plans)save(KEY.plans,d.plans);
-      if(d.review)save(KEY.review,d.review);
-      if(d.writing)save(KEY.writing,d.writing);
-      if(d.ideas)save(KEY.ideas,d.ideas);
-      if(d.weight)save(KEY.weight,d.weight);
-      if(d.target!==undefined)save(KEY.target,d.target);
-      toast('导入完成，正在刷新…');
-      setTimeout(()=>location.reload(),600);
-    }catch(e){toast('导入失败：文件格式不对');}
-  };
-  rd.readAsText(f);input.value='';
-}
+applyConfig();buildNav();go('home');
 </script>
 </body>
 </html>
