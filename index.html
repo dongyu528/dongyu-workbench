@@ -139,7 +139,7 @@ canvas{width:100%;height:120px;display:block;}
       <div class="card">
         <h3 id="planTitle">每日计划</h3>
         <div id="planList"></div>
-        <div class="bar"><i id="planBar" style="width:0%"></i></div>
+        <div class="bar" id="planBarBox"><i id="planBar" style="width:0%"></i></div>
         <div class="muted" id="planRate" style="margin-top:6px;">完成 0%</div>
         <div class="row" style="margin-top:10px;">
           <input id="planInput" placeholder="输入一条计划，回车添加">
@@ -159,11 +159,11 @@ canvas{width:100%;height:120px;display:block;}
       </div>
       <div class="card">
         <h3 id="reviewTitle">每日复盘</h3>
-        <div class="grid2" style="margin-bottom:8px;">
+        <div class="grid2" id="rvStatBox" style="margin-bottom:8px;">
           <div class="stat"><div class="n" id="rvPct">0%</div><div class="l">计划完成率</div></div>
           <div class="stat"><div class="n" id="rvCnt">0/0</div><div class="l">已完成/总</div></div>
         </div>
-        <div class="bar"><i id="rvBar" style="width:0%"></i></div>
+        <div class="bar" id="rvBarBox"><i id="rvBar" style="width:0%"></i></div>
         <div class="muted" style="margin:10px 0 4px;" id="rvPlanHint">今日计划（点击打钩）</div>
         <div id="reviewPlanList"></div>
         <div class="muted" style="margin:12px 0 4px;">总结</div>
@@ -434,6 +434,9 @@ function renderPlan(){
   const rate=total?Math.round(done/total*100):0;
   document.getElementById('planBar').style.width=rate+'%';
   document.getElementById('planRate').textContent='完成 '+rate+'%';
+  const isMemo=planCur==='memo';
+  document.getElementById('planBarBox').style.display=isMemo?'none':'';
+  document.getElementById('planRate').style.display=isMemo?'none':'';
 }
 function addPlan(){
   const inp=document.getElementById('planInput');const v=inp.value.trim();if(!v)return;
@@ -475,6 +478,9 @@ function paintReviewItems(){
   document.getElementById('rvPct').textContent=rate+'%';
   document.getElementById('rvCnt').textContent=done+'/'+total;
   document.getElementById('rvBar').style.width=rate+'%';
+  const isMemo=reviewCur==='memo';
+  document.getElementById('rvStatBox').style.display=isMemo?'none':'';
+  document.getElementById('rvBarBox').style.display=isMemo?'none':'';
 }
 function toggleReviewItem(i){reviewEditItems[i].done=!reviewEditItems[i].done;paintReviewItems();}
 function saveReview(){
