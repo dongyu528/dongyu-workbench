@@ -73,6 +73,20 @@ canvas{width:100%;height:120px;display:block;}
 .tagpick span.on{background:var(--primary);color:#fff;}
 .toast{position:fixed;left:50%;top:40%;transform:translateX(-50%);background:rgba(0,0,0,.8);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.3s;pointer-events:none;}
 .toast.show{opacity:1;}
+.wtabs{display:flex;gap:6px;background:#eceef0;padding:4px;border-radius:12px;margin-bottom:12px;}
+.wtab{flex:1;border:none;background:none;padding:7px 0;border-radius:9px;font-size:13px;color:var(--sub);cursor:pointer;}
+.wtab.on{background:#fff;color:var(--primary);font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.unitpick{display:inline-flex;border:1px solid var(--line);border-radius:18px;overflow:hidden;}
+.unitpick span{padding:5px 12px;font-size:12px;cursor:pointer;background:#fafbfc;color:var(--sub);}
+.unitpick span.on{background:var(--primary);color:#fff;}
+.bignum{font-size:40px;font-weight:800;color:var(--primary);text-align:center;margin:12px 0 2px;line-height:1;}
+.bignum .u{font-size:16px;color:var(--sub);font-weight:600;margin-left:6px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal.show{display:flex;}
+.modal-box{background:#fff;border-radius:16px;padding:18px;width:100%;max-width:320px;box-shadow:0 8px 30px rgba(0,0,0,.2);}
+.modal-box h3{margin:0 0 12px;}
+.modal-box input{margin:4px 0 10px;}
 .brand{background:linear-gradient(135deg,#4a90e2,#6ab7ff);border-radius:16px;padding:18px;color:#fff;text-align:center;margin-bottom:12px;box-shadow:0 4px 16px rgba(74,144,226,.25);}
 .brand .bn{font-size:20px;font-weight:800;letter-spacing:2px;}
 .brand .bs{font-size:12px;opacity:.92;margin-top:4px;}
@@ -185,29 +199,101 @@ canvas{width:100%;height:120px;display:block;}
 
     <!-- 体重管理 -->
     <section class="page" id="p_weight">
-      <div class="card">
-        <h3>⚖️ 体重记录 <span class="muted">(一天可记多次)</span></h3>
-        <div class="row">
-          <input id="wtInput" type="number" step="0.1" placeholder="体重 kg，如 60.5">
-          <button class="btn" onclick="saveWeight()">记录</button>
-        </div>
-        <div class="grid2" style="margin-top:10px;">
-          <div class="stat"><div class="n" id="wtToday">--</div><div class="l">今日最新</div></div>
-          <div class="stat"><div class="n" id="wtDiff">--</div><div class="l">较昨日</div></div>
-        </div>
-        <div id="wtList" class="wtlist" style="margin-top:10px;"></div>
+      <div class="wtabs">
+        <button class="wtab on" data-wt="diary" onclick="wtGo('diary')">日记</button>
+        <button class="wtab" data-wt="trend" onclick="wtGo('trend')">趋势</button>
       </div>
-      <div class="card"><h3>📈 近7天趋势</h3><canvas id="wtChart"></canvas></div>
-      <div class="card">
-        <h3>🍱 今日饮食 <span class="muted">(目标 1500 kcal)</span></h3>
-        <div class="row">
-          <input id="dietFood" placeholder="食物，如 米饭">
-          <input id="dietKcal" type="number" placeholder="热量" style="width:100px;">
-          <button class="btn sm" onclick="addDiet()">+</button>
+
+      <!-- 子页A：日记 -->
+      <div id="wtDiary">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h3 style="margin:0">⚖️ 体重日记</h3>
+            <div class="unitpick" id="unitPick">
+              <span data-u="kg" class="on" onclick="setUnit('kg')">kg</span>
+              <span data-u="jin" onclick="setUnit('jin')">斤</span>
+            </div>
+          </div>
+          <div class="bignum"><span id="wtBig">--</span><span class="u" id="wtBigUnit">kg</span></div>
+          <div class="muted" style="text-align:center" id="wtBigAlt"></div>
+          <button class="btn ghost sm" style="margin-top:10px;width:100%" onclick="openTarget()">🎯 设置目标</button>
+          <div class="grid3" style="margin-top:12px;">
+            <div class="stat"><div class="n" id="wtDelta">--</div><div class="l">较昨日</div></div>
+            <div class="stat"><div class="n" id="wtFat">--</div><div class="l">体脂率</div></div>
+            <div class="stat"><div class="n" id="wtGoal">未设置</div><div class="l">距目标</div></div>
+          </div>
+          <div class="bar" id="wtGoalBar" style="display:none"><i id="wtGoalFill"></i></div>
         </div>
-        <div class="row" style="margin:8px 0;" id="quickFoods"></div>
-        <div id="dietList"></div>
-        <div class="muted" style="margin-top:6px;">今日已摄入 <span class="kcal" id="dietSum">0</span> kcal</div>
+        <div class="card">
+          <h3>📋 记录明细 <span class="muted">(一天可多次)</span></h3>
+          <div id="wtList"></div>
+          <button class="btn" style="margin-top:10px;width:100%" onclick="openAddWeight()">+ 记录体重</button>
+        </div>
+        <div class="card">
+          <h3>🍱 今日饮食 <span class="muted">(目标 1500 kcal)</span></h3>
+          <div class="row">
+            <input id="dietFood" placeholder="食物，如 米饭">
+            <input id="dietKcal" type="number" placeholder="热量" style="width:100px;">
+            <button class="btn sm" onclick="addDiet()">+</button>
+          </div>
+          <div class="row" style="margin:8px 0;" id="quickFoods"></div>
+          <div id="dietList"></div>
+          <div class="muted" style="margin-top:6px;">今日已摄入 <span class="kcal" id="dietSum">0</span> kcal</div>
+        </div>
+      </div>
+
+      <!-- 子页B：趋势 -->
+      <div id="wtTrend" style="display:none">
+        <div class="card">
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <h3 style="margin:0">📈 趋势</h3>
+            <select id="trendDim" onchange="renderTrend()">
+              <option value="weight">体重</option>
+              <option value="goal">距目标</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top:8px" id="trendRange">
+            <button class="btn ghost sm on" data-r="7" onclick="setRange(7)">7天</button>
+            <button class="btn ghost sm" data-r="30" onclick="setRange(30)">30天</button>
+            <button class="btn ghost sm" data-r="0" onclick="setRange(0)">全部</button>
+          </div>
+          <canvas id="wtChart" style="margin-top:10px;height:180px;"></canvas>
+          <div class="muted" style="margin-top:6px" id="trendTip">点圆点查看当天数据</div>
+        </div>
+      </div>
+
+      <!-- 设置目标弹层 -->
+      <div class="modal" id="targetModal">
+        <div class="modal-box">
+          <h3>🎯 设置目标</h3>
+          <div class="muted">起始体重</div>
+          <input id="tgStart" type="number" step="0.1" placeholder="如 70">
+          <div class="muted" style="margin-top:6px">目标体重</div>
+          <input id="tgGoal" type="number" step="0.1" placeholder="如 60">
+          <div class="muted" style="margin-top:6px">显示单位</div>
+          <div class="unitpick" id="tgUnit">
+            <span data-u="kg" class="on" onclick="tgSetUnit('kg')">kg</span>
+            <span data-u="jin" onclick="tgSetUnit('jin')">斤</span>
+          </div>
+          <div class="row" style="margin-top:16px;justify-content:flex-end">
+            <button class="btn ghost" onclick="closeModal('targetModal')">取消</button>
+            <button class="btn" onclick="saveTarget()">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 记录体重弹层 -->
+      <div class="modal" id="addWModal">
+        <div class="modal-box">
+          <h3>记录体重</h3>
+          <input id="awVal" type="number" step="0.1" placeholder="体重">
+          <div class="muted" style="margin-top:6px">体脂率（选填）</div>
+          <input id="awFat" type="number" step="0.1" placeholder="如 28">
+          <div class="row" style="margin-top:16px;justify-content:flex-end">
+            <button class="btn ghost" onclick="closeModal('addWModal')">取消</button>
+            <button class="btn" onclick="submitAddWeight()">保存</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -269,7 +355,7 @@ function applyConfig(){
 const KEY={
   plans:'wb_plans', review:'wb_review',
   writing:'wb_writing', ideas:'wb_ideas',
-  weight:'wb_weight', diet:'wb_diet'
+  weight:'wb_weight', diet:'wb_diet', target:'wb_weight_target'
 };
 const load=(k,def)=>{try{return JSON.parse(localStorage.getItem(k))??def}catch(e){return def}};
 const save=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -330,7 +416,7 @@ function renderHome(){
   document.getElementById('ovPlan').textContent=done+'/'+total;
   document.getElementById('ovTodo').textContent=total-done;
   const wt=load(KEY.weight,[]);
-  document.getElementById('ovWeight').textContent=wt.length?wt[wt.length-1].value:'--';
+  document.getElementById('ovWeight').textContent=wt.length?toU(wt[wt.length-1].value)+uLab():'--';
   document.getElementById('ovIdea').textContent=load(KEY.ideas,[]).length;
   document.getElementById('todayStr').textContent=todayCN();
 }
@@ -486,54 +572,78 @@ function renderIdeas(){
 function delIdea(id){ideas=ideas.filter(x=>x.id!==id);save(KEY.ideas,ideas);renderIdeas();renderHome();}
 
 /* ---------- 体重管理 ---------- */
-let weights=load(KEY.weight,[]).map(w=>({id:w.id||uid(),date:w.date,time:w.time||'',value:w.value}));let diets=load(KEY.diet,[]);
+let weights=load(KEY.weight,[]).map(w=>({id:w.id||uid(),date:w.date,time:w.time||'',value:w.value,fat:w.fat!=null?w.fat:null}));
+let diets=load(KEY.diet,[]);
+let target=load(KEY.target,null);
+let curUnit=target&&target.unit?target.unit:'kg';
+let wtTab='diary', trendRange=7, tgUnit='kg';
 const QUICK=[{n:'米饭',k:116},{n:'鸡蛋',k:70},{n:'鸡肉',k:133},{n:'面条',k:280},{n:'苹果',k:52},{n:'牛奶',k:65}];
-function saveWeight(){
-  const v=+document.getElementById('wtInput').value;if(!v)return;
-  const d=new Date();
-  const time=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-  weights.push({id:uid(),date:today(),time,value:v});save(KEY.weight,weights);
-  document.getElementById('wtInput').value='';toast('已记录');renderWeight();renderHome();
-}
+function toU(v){return curUnit==='jin'?+(v*2).toFixed(1):v;}
+function uLab(){return curUnit==='jin'?'斤':'kg';}
+function lastOfDay(arr,d){const f=arr.filter(x=>x.date===d);return f.length?f[f.length-1]:null;}
+function renderWeight(){if(wtTab==='diary')renderDiary();else renderTrend();}
+function wtGo(t){wtTab=t;document.querySelectorAll('.wtab').forEach(b=>b.classList.toggle('on',b.dataset.wt===t));document.getElementById('wtDiary').style.display=t==='diary'?'block':'none';document.getElementById('wtTrend').style.display=t==='trend'?'block':'none';renderWeight();}
+function setUnit(u){curUnit=u;if(target){target.unit=u;save(KEY.target,target);}document.querySelectorAll('#unitPick span').forEach(s=>s.classList.toggle('on',s.dataset.u===u));renderWeight();renderHome();}
+function tgSetUnit(u){tgUnit=u;document.querySelectorAll('#tgUnit span').forEach(s=>s.classList.toggle('on',s.dataset.u===u));}
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function openTarget(){if(target){document.getElementById('tgStart').value=target.startWeight;document.getElementById('tgGoal').value=target.goalWeight;tgUnit=target.unit||'kg';}else{document.getElementById('tgStart').value='';document.getElementById('tgGoal').value='';tgUnit='kg';}document.querySelectorAll('#tgUnit span').forEach(s=>s.classList.toggle('on',s.dataset.u===tgUnit));showModal('targetModal');}
+function saveTarget(){const s=+document.getElementById('tgStart').value,g=+document.getElementById('tgGoal').value;if(!s||!g)return;target={startWeight:s,goalWeight:g,unit:tgUnit,setDate:today()};save(KEY.target,target);curUnit=tgUnit;document.querySelectorAll('#unitPick span').forEach(x=>x.classList.toggle('on',x.dataset.u===curUnit));closeModal('targetModal');toast('目标已保存');renderWeight();renderHome();}
+function openAddWeight(){document.getElementById('awVal').value='';document.getElementById('awFat').value='';showModal('addWModal');}
+function submitAddWeight(){const v=+document.getElementById('awVal').value;if(!v)return;const fat=document.getElementById('awFat').value;const d=new Date();const time=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');weights.push({id:uid(),date:today(),time,value:v,fat:fat?+fat:null});save(KEY.weight,weights);closeModal('addWModal');toast('已记录');renderWeight();renderHome();}
 function delWeight(id){weights=weights.filter(x=>x.id!==id);save(KEY.weight,weights);renderWeight();renderHome();}
-function renderWeight(){
-  // 今日最新 / 较昨日
-  const tWatts=weights.filter(w=>w.date===today());
-  const tLatest=tWatts.length?tWatts[tWatts.length-1].value:'--';
-  const y=new Date();y.setDate(y.getDate()-1);const yStr=y.toISOString().slice(0,10);
-  const yWatts=weights.filter(w=>w.date===yStr);const yLatest=yWatts.length?yWatts[yWatts.length-1].value:null;
-  document.getElementById('wtToday').textContent=tLatest;
-  document.getElementById('wtDiff').textContent=(tLatest!=='--'&&yLatest!=null)?((tLatest-yLatest>=0?'+':'')+(tLatest-yLatest).toFixed(1)):'--';
-  // 记录明细（可删除，最新在前）
+function renderDiary(){
+  const tW=lastOfDay(weights,today());
+  const y=new Date();y.setDate(y.getDate()-1);const yStr=y.toISOString().slice(0,10);const yW=lastOfDay(weights,yStr);
+  document.getElementById('wtBig').textContent=tW?toU(tW.value):'--';
+  document.getElementById('wtBigUnit').textContent=uLab();
+  document.getElementById('wtBigAlt').textContent=(tW&&curUnit==='jin')?('≈ '+toU(tW.value).toFixed(1)+' '+uLab()):'';
+  const dlt=(tW&&yW)?(toU(tW.value)-toU(yW.value)):null;
+  const dEl=document.getElementById('wtDelta');
+  dEl.textContent=dlt==null?'--':((dlt>=0?'+':'')+dlt.toFixed(1));
+  dEl.style.color=dlt==null?'var(--primary)':(dlt>0?'var(--primary)':'var(--ok)');
+  const fatW=[...weights].reverse().find(x=>x.fat!=null);
+  document.getElementById('wtFat').textContent=fatW?fatW.fat+'%':'--';
+  const gEl=document.getElementById('wtGoal'),bar=document.getElementById('wtGoalBar'),fill=document.getElementById('wtGoalFill');
+  if(target&&weights.length){
+    const cur=tW?tW.value:weights[weights.length-1].value;
+    const diff=cur-target.goalWeight;
+    const total=target.startWeight-target.goalWeight;
+    const pct=total!==0?Math.max(0,Math.min(100,((target.startWeight-cur)/total)*100)):0;
+    gEl.textContent=(diff>=0?'还差 ':'已超 ')+toU(Math.abs(diff)).toFixed(1)+uLab();
+    bar.style.display='block';fill.style.width=pct+'%';
+  }else if(target){gEl.textContent='还差 '+toU(Math.abs(target.startWeight-target.goalWeight)).toFixed(1)+uLab();bar.style.display='block';fill.style.width='0%';}
+  else{gEl.textContent='未设置';bar.style.display='none';}
   const box=document.getElementById('wtList');
   if(!weights.length){box.innerHTML='<div class="muted" style="padding:6px 0;">还没有记录</div>';}
-  else{box.innerHTML=weights.slice(-12).reverse().map(w=>`<div class="item"><div class="txt">${w.date} ${w.time||''}</div><div class="txt" style="text-align:right">${w.value} kg</div><div class="del" onclick="delWeight('${w.id}')">×</div></div>`).join('');}
-  // 近7天趋势（取近7个日历日所有记录）
-  const cut=new Date();cut.setDate(cut.getDate()-6);const cutoff=cut.toISOString().slice(0,10);
-  const last=weights.filter(w=>w.date>=cutoff);
-  const cv=document.getElementById('wtChart');const ctx=cv.getContext('2d');
-  cv.width=cv.clientWidth*2;cv.height=240;
-  ctx.scale(2,2);ctx.clearRect(0,0,cv.clientWidth,cv.clientHeight);
-  if(last.length){
-    const vals=last.map(x=>x.value);const min=Math.min(...vals)-0.5,max=Math.max(...vals)+0.5;
-    const W=cv.clientWidth,H=cv.clientHeight,pad=20;
-    ctx.strokeStyle=CONFIG.primary;ctx.lineWidth=2;ctx.beginPath();
-    last.forEach((x,i)=>{const px=pad+i*(W-2*pad)/(last.length-1||1);const py=H-pad-(x.value-min)/(max-min||1)*(H-2*pad);i?ctx.lineTo(px,py):ctx.moveTo(px,py);});
-    ctx.stroke();
-    ctx.fillStyle='#9aa0a6';ctx.font='10px sans-serif';
-    last.forEach((x,i)=>{const px=pad+i*(W-2*pad)/(last.length-1||1);const py=H-pad-(x.value-min)/(max-min||1)*(H-2*pad);ctx.fillText(x.value,px-8,py-6);});
-  } else {ctx.fillStyle='#9aa0a6';ctx.font='12px sans-serif';ctx.fillText('暂无数据',10,40);}
-  // 饮食
+  else{box.innerHTML=weights.slice(-12).reverse().map(w=>`<div class="item"><div class="txt">${w.date} ${w.time||''}${w.fat!=null?' · 体脂'+w.fat+'%':''}</div><div class="txt" style="text-align:right">${toU(w.value)} ${uLab()}</div><div class="del" onclick="delWeight('${w.id}')">×</div></div>`).join('');}
   const todayDiet=diets.filter(d=>d.date===today());
   document.getElementById('quickFoods').innerHTML=QUICK.map(f=>`<button class="btn ghost sm" onclick="addDietQuick('${f.n}',${f.k})">${f.n} ${f.k}</button>`).join('');
   const dl=document.getElementById('dietList');
   if(!todayDiet.length)dl.innerHTML='<div class="muted" style="padding:6px 0;">今天还没吃</div>';
-  else dl.innerHTML=todayDiet.map(d=>`<div class="item"><div class="txt">${esc(d.food)}</div><div class="txt" style="text-align:right" >${d.kcal} kcal</div><div class="del" onclick="delDiet('${d.id}')">×</div></div>`).join('');
+  else dl.innerHTML=todayDiet.map(d=>`<div class="item"><div class="txt">${esc(d.food)}</div><div class="txt" style="text-align:right">${d.kcal} kcal</div><div class="del" onclick="delDiet('${d.id}')">×</div></div>`).join('');
   document.getElementById('dietSum').textContent=todayDiet.reduce((s,d)=>s+d.kcal,0);
 }
-function addDiet(){const f=document.getElementById('dietFood').value.trim();const k=+document.getElementById('dietKcal').value||0;if(!f||!k)return;diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);document.getElementById('dietFood').value='';document.getElementById('dietKcal').value='';renderWeight();}
-function addDietQuick(f,k){diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);renderWeight();}
-function delDiet(id){diets=diets.filter(x=>x.id!==id);save(KEY.diet,diets);renderWeight();}
+function setRange(r){trendRange=r;document.querySelectorAll('#trendRange button').forEach(b=>b.classList.toggle('on',+b.dataset.r===r));renderTrend();}
+function renderTrend(){
+  const cv=document.getElementById('wtChart');const ctx=cv.getContext('2d');
+  cv.width=cv.clientWidth*2;cv.height=360;ctx.scale(2,2);ctx.clearRect(0,0,cv.clientWidth,cv.clientHeight);
+  let data=weights.slice().sort((a,b)=>a.date===b.date?(a.time||'').localeCompare(b.time||''):a.date.localeCompare(b.date));
+  if(trendRange>0){const cut=new Date();cut.setDate(cut.getDate()-trendRange+1);const cs=cut.toISOString().slice(0,10);data=data.filter(w=>w.date>=cs);}
+  const W=cv.clientWidth,H=cv.clientHeight,pad=24;
+  if(!data.length){ctx.fillStyle='#9aa0a6';ctx.font='13px sans-serif';ctx.fillText('暂无数据',12,40);return;}
+  const dim=document.getElementById('trendDim').value;
+  const vals=data.map(w=>dim==='goal'&&target?(w.value-target.goalWeight):w.value);
+  const min=Math.min(...vals)-0.5,max=Math.max(...vals)+0.5;
+  ctx.strokeStyle=CONFIG.primary;ctx.lineWidth=2;ctx.beginPath();
+  data.forEach((w,i)=>{const px=pad+i*(W-2*pad)/(data.length-1||1);const py=H-pad-(vals[i]-min)/(max-min||1)*(H-2*pad);i?ctx.lineTo(px,py):ctx.moveTo(px,py);});
+  ctx.stroke();
+  data.forEach((w,i)=>{const px=pad+i*(W-2*pad)/(data.length-1||1);const py=H-pad-(vals[i]-min)/(max-min||1)*(H-2*pad);ctx.fillStyle=CONFIG.primary;ctx.beginPath();ctx.arc(px,py,3,0,7);ctx.fill();ctx.fillStyle='#9aa0a6';ctx.font='10px sans-serif';ctx.fillText(toU(vals[i]).toFixed(1),px-8,py-6);});
+  cv.onclick=(e)=>{const rect=cv.getBoundingClientRect();const x=e.clientX-rect.left;let best=0,bd=1e9;data.forEach((w,i)=>{const px=pad+i*(W-2*pad)/(data.length-1||1);if(Math.abs(px-x)<bd){bd=Math.abs(px-x);best=i;}});const w=data[best];document.getElementById('trendTip').textContent=`${w.date} ${w.time||''} · ${toU(w.value)} ${uLab()}${target?(' · 距目标 '+toU(Math.abs(w.value-target.goalWeight)).toFixed(1)+uLab()):''}`;};
+}
+function addDiet(){const f=document.getElementById('dietFood').value.trim();const k=+document.getElementById('dietKcal').value||0;if(!f||!k)return;diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);document.getElementById('dietFood').value='';document.getElementById('dietKcal').value='';renderDiary();}
+function addDietQuick(f,k){diets.push({id:uid(),date:today(),food:f,kcal:k});save(KEY.diet,diets);renderDiary();}
+function delDiet(id){diets=diets.filter(x=>x.id!==id);save(KEY.diet,diets);renderDiary();}
 
 /* ---------- 工具 ---------- */
 function esc(s){return (s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
